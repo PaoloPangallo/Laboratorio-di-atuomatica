@@ -1,0 +1,619 @@
+
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{comment}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{float}
+
+
+
+
+
+
+\title{Progetto Laboratorio di Automatica}
+\author{Paolo Pangallo}
+\date{2023}
+
+\begin{document}
+\fontsize{12}{14}\selectfont
+\maketitle
+
+\section{Regolatore digitale}
+
+
+Data  $G\left(s\right)=\frac{-s+0.1}{\left(s+0.6\right)\left(s+8\right)}$ ,la prima parte del progetto consiste nella realizzazione di un regolatore standard digitale in grado di garantire le seguenti specifiche:
+
+1. errore nullo rispetto ad un riferimento a gradino.
+
+2. Sovra-elongazione percentuale massima pari al 20\% e tempo di assestamento minore di 20sec.
+
+\subsection{Cos è un controllore digitale?}
+Un regolatore digitale \`{e}
+ un sistema il cui compito è quello della
+trasformazione del segnale di errore campionato in una sequenza di
+campioni che, opportunamente ricostruita, è il segnale di comando del
+processo. Tale operazione di trasformazione avviene secondo un
+determinato algoritmo.
+
+ \subsection{Perche scegliere un controllore digitale?}
+ La scelta di un controllore digitale offre vari vantaggi rispetto ad un controllore analogico.Riassumendo i piu' importanti:
+
+ \subsubsection{Flessibilit\`{a} Algoritmica:}
+L'adozione di controllori digitali consente l'utilizzo di algoritmi più sofisticati, garantendo la flessibilità necessaria per adattarsi alle complesse dinamiche del sistema.
+
+\subsubsection{Stabilit\`{a} e Coerenza:}
+La stabilità intrinseca e la coerenza dell'elaborazione numerica dei segnali nei controllori digitali offrono una maggiore affidabilità operativa, particolarmente critica nelle applicazioni dove la consistenza è essenziale.
+
+\subsubsection{Facile Modificabilit\`{a}:}
+La possibilità di intervenire sul software senza dover apportare modifiche fisiche ai regolatori semplifica notevolmente il processo di aggiornamento e adattamento del sistema nel corso del progetto.
+
+
+\subsubsection{Precisione e Sensibilit\`a:}La sensibilità concentrata nel codificatore nei controllori digitali contribuisce a migliorare la precisione del sistema, un aspetto cruciale per il successo delle nostre applicazioni.
+
+\subsubsection{Soglie e Saturazioni:} 
+L'assenza di soglie e saturazioni durante l'elaborazione digitale dei segnali assicura una maggiore robustezza operativa, riducendo al minimo gli effetti di eventuali condizioni limite.
+
+\subsubsection{Trasmissione a Distanza:}
+La trasmissione digitale non solo migliora la resistenza al rumore, ma permette anche l'implementazione di tecniche avanzate di correzione degli errori, un aspetto cruciale per le applicazioni che richiedono trasmissioni a distanza.
+
+
+
+
+\subsection{Sintonizzazione dei controllori PID:}
+Esistono vari metodi per sintonizzare un controllore PID, ognuno dei quali presenta i propri vantaggi e un grado di difficoltt\`{a} implementativo  differente. Vedremo di seguito una possibile implementazione con il metodo Ziegler-Nichols.
+
+
+
+\subsubsection{ Il metodo Ziegler-Nichols per un sistema a ciclo chiuso} 
+
+Il metodo di ZN a ciclo chiuso è applicabile unicamente a quei processi che
+ammettono un guadagno critico finito, cioè quei processi tali che il corrispondente
+luogo delle radici entra nel semipiano destro per valori sufficientemente elevati
+del guadagno.
+Per contro, il metodo di ZN a ciclo chiuso può essere applicato sia a processi con
+poli nell’origine, la cui risposta al gradino a ciclo aperto diverge, che a processi
+aventi poli complessi coniugati e quindi risposta oscillatoria, due scenari in cui il
+metodo di ZN a ciclo aperto non può essere applicato (esso richiede infatti che la
+risposta al gradino a ciclo aperto converga senza oscillazioni verso un valore
+costante).
+
+Nel nostro caso, notiamo che il sistema a è compatibile con le ipotesi di lavoro di Ziegler-Nichols e quindi possiamo precedere con la prima fase.
+
+
+\subsubsection{Fase 1: Guadagno e tempo di oscillazione} 
+
+Una volta impementato, grazie all'aiuto di Simulink, il sistema a ciclo chiuso con gli opportuni blocchi, la prima fase consiste nell'introdurre un guadagno molto basso (generalmente si sceglie k= 1)  attraverso un blocco gain. Con un pò di pazienza si incrementa volta per volta il "gain" fino ad ottenere oscillazioni sostenute. Nel nostro caso ci si accorge che per valori compresi tra 8 e 9 si riesce ad ottenere delle oscillazioni grossomodo stabili e, con qualche tentativo aggiuntivo, si ottiene il valore "ottimale" 8.6.
+Da questo valore si simula il processo e si valuta geometricamente il tempo di oscillazione che in questo caso è di 2.735 secondi. 
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\linewidth]{Oscillazioni.png}
+\caption{Valutazione geometrica tempo di oscillazione tramite simulink}
+\label{fig:impl_arch}
+\end{figure}
+
+
+\subsubsection{Fase 2: Implementazione del Controllore}
+
+La scelta di un controllore adeguato non è triviale, e in alcuni casi bisogna effettuare alcuni test prima di determinare il controllore che meglio si adatta all'impianto. In questo caso le specifiche richiedono un errore nullo a regime e un tempo di assestamento non proibitivo, quindi un controllore PI potrebbe essere una buona scelta.
+Il metodo Ziegler-Nichols offre dei parametri iniziali per $K_{p}$, $K_{i}$  (e $K_{d}$) in grado di ottenere  una prima stima del controllore basandosi su guadagno e tempo di oscillazione precedente calcolati. Per un controllore di tipo Pi abbiamo:
+
+\begin{enumerate}
+  \item $k_p$ =  $0.4k_c$ = 3.44
+  \item $k_i$ = $k_p$/$0.8t_c$ = 1.57
+  
+\end{enumerate}  
+
+
+Implementiamo il controllore in Simulink e verifichiamo come reagisce il sistema a ciclo chiuso
+
+\begin{figure}[h!]
+  \caption{Taratura Pid.}
+  \centering
+  \includegraphics[width=0.8\textwidth]{DIGITALE1.png}
+\end{figure}
+
+Notiamo come il sistema sia stabile ma abbia una risposta pessima che si assesta dopo molto tempo.In questo caso i parametri vanno rivisti "al rialzo" senza esagerare, poich\è altrimenti si rischia di alterarne la stabilit\à.
+Otteniamo i nuovi parametri come segue:
+
+\begin{enumerate}
+  \item $k_p$ =  $1.5k_p$ = 5.16
+  \item $k_i$ =  $1.5k_i$ = 4.07
+  
+\end{enumerate} 
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\linewidth]{Digitale3.png}
+\caption{Comparazione controllori}
+\label{fig:impl_arch}
+\end{figure}
+
+
+
+Notiamo come il nuovo sistema abbia complessivamente delle prestazioni dinamiche piu stabili, abbia mentenuto la sua stabilita e l'errore nullo a regime siano ancora un po lontani sulle specifiche di sovraelongazione e tempo di assestamento, quindi la taratura va modificata ulteriormente, anche stavolta senza esagerare.
+
+
+
+
+
+ \begin{figure}[H]
+\centering
+\includegraphics[width=1\linewidth]{Digitale22.png}
+\caption{Comparazione controllori}
+\label{fig:impl_arch}
+\end{figure}
+
+Come si puo notare il sistema sta "migliorando", quindi l'aumento di  $k_p$  $k_i$ è il modo migliore di procedere.
+
+\subsubsection{Fase 3: Verifiche e considerazioni conclusive }
+
+Sono stati resi necessari ulteriori test per tarare un controllore che rispettasse correttamente tutte le specifiche dinamiche e rappresentarle tutte appesentirebbe di molto la trattazione senza aggiungere nulla che già non si sappia.
+
+
+
+Si conclude la parte sulla taratura del controllore mostrando come i valori  $k_p$ =6.66 e  $k_i$ =4.07 siano ottimali per il sistema proposto.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\linewidth]{Digitale4.png}
+\caption{Comparazione controllori}
+\label{fig:impl_arch}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1.5\linewidth]{DigitaleFin.png}
+\caption{Sistema su blocco scope}
+\label{fig:impl_arch}
+\end{figure}
+
+L'ultima immagine consiste nella rappresentazione grafica del sistema vista dal blocco Scope di simulink, che ci permette di visualizzare alcune "statistiche" del sistema.
+Il valore 11.466 indica il tempo di assestamento del sistema mentre il max indica il picco della funzione che coincide in questo caso con la sovra-elongazione pari quindi all'11.61 \%.
+
+Il sistema rispetta tutte le specifiche ed è pronto per essere discretizzato.
+
+
+
+
+\subsection{Discretizzazione PI}
+
+La discretizzazione di un controllore, una volta nota la sua forma matematica al tempo continuo, non è un procedimento complesso,
+sopratutto grazie all'ausilio di strumenti come Matlab e Simulink. Bisogna tuttavia fare alcune considerazioni di carattere teorico per evitare che la discretizzazione descriva il controllore in maniera troppo poco "accurata"
+
+\subsubsection{Dal tempo continuo al tempo discreto}
+
+La conversione da tempo continuo a tempo discreto passa innanzitutto dalla scelta del tempo di campionamento e sull'assunzione secondo la quale una cattiva scelta di quest'ultimo possa produrre  situazioni spiacevoli differenti.
+
+
+\subsubsection{Tempo di campionamento troppo basso: problemi e soluzioni}
+
+\begin{description}
+  \item[Problema] Aliasing: Se il tempo di campionamento è troppo basso rispetto alla frequenza del segnale, può verificarsi aliasing. Questo si traduce nella distorsione del segnale e nella perdita di informazioni.
+  \item Soluzione: Teorema di Nyquist-Shannon suggerisce che il tempo di campionamento debba essere almeno il doppio della frequenza massima del segnale.
+
+  \item[Problema] Requisiti computazionali: Tempi di campionamento troppo bassi possono richiedere risorse computazionali significative, portando a problemi di prestazioni e complessità nell'implementazione.
+
+
+\item Soluzione: Ottimizzare gli algoritmi di campionamento e le risorse di calcolo per mantenere un equilibrio tra accuratezza e efficienza
+
+\end{description}
+
+
+
+\subsubsection{Tempo di campionamento troppo alto: problemi e soluzioni}
+
+\begin{description}
+  \item[Problema] Perdita di informazioni: Un tempo di campionamento troppo alto può causare la perdita di informazioni dettagliate e veloci nei segnali o nei dati dinamici.
+  \item Soluzione: Ridurre il tempo di campionamento per catturare meglio le variazioni rapide nei segnali.
+  \item[Problema] Spreco di risorse: Un campionamento troppo alto può comportare un uso inefficiente delle risorse, specialmente in sistemi embedded o con vincoli di risorse.
+  \item Soluzione: Ottimizzare il tempo di campionamento in base alle esigenze specifiche del sistema, evitando sprechi di risorse.
+  
+\end{description}
+
+\subsection{Scelta del tempo di campionamento}
+Tralasciando queste assunzioni pratiche, la bontà di un controllore va valutata a posteriori, non è quindi necessario ricavarne uno in maniera definitiva già da subito, ma come orientarsi?
+
+Generalmente si prendono come riferimento due caratteristiche dinamiche del sistema: \emph{tempo di assestamento} e \emph{tempo di salita} secondo questi due criteri.
+
+\[ \frac{t_r}{20} \leq t_c \leq \frac{t_r}{10} \quad \text{e} \quad t_c \leq \frac{t_s}{40} \]
+
+
+con \[ T_r \]  Time Rising (tempo di salita) e \[ T_s \] Time settling (tempo di assestamento).
+
+Oppure una strategia alternativa è considerare il polo piu veloce del sistema: 
+
+\( \tau = \frac{1}{\text{{polo più veloce}}} = \frac{1}{8} \). Quindi:
+
+\[ T_c = \frac{\tau}{10} = \frac{1/8}{10} = 0.0125 \]
+
+nel nostro caso le specifiche garantiscono un tempo di assestamento al piu di 20s, mentre il tempo di salita sara intuibile dal grafico a tempo continuo, di circa 6 secondi.
+
+Quindi otteniamo: 
+\begin{enumerate}
+  \item \[t_{c1} = 0.6\]
+  \item \[t_{c2}\ = 0.5\]
+  \item \[t_{c3}\ = 0.0125\]
+\end{enumerate}
+
+Dati alla mano generalmente il Tc preferibile è il minore tra i tre,in questo caso quello relativo al polo piu veloce.
+ Di seguito verranno testati tutti e 3 per poterne valutare e apprezzare le differenze.
+
+
+ \subsubsection{Conversione e test}
+Generalmente per passare dal tempo continuto al tempo discreto si valutano 3 algoritmi
+
+
+
+\begin{enumerate}
+  \item Eulero in avanti (o Eulero standard) = \(s \rightarrow \frac{1}{T_c} \cdot (z-1)\)
+
+  \item Eulero all'indietro = \(s \rightarrow \frac{1}{T_c} \cdot \frac{z-1}{z}\)
+  \item Tustin =\(s \rightarrow \frac{2}{T_c} \cdot \frac{z-1}{z+1}\)
+
+\end{enumerate}
+
+
+Matlab permette, tramite il comando c2d di convertire un segnale continuo in un segnale dicreto utilizzando Tustin, mentre per i metodi di eulero è necessario sostituire i valori manualmente.
+
+Vedremo di seguito alcuni test svolti con tutti e 3 i metodi per capirne le differenze; alla fine verra proposta una "scorciatoia", ovvero l'implemetazione 
+ di un PI gia discretizzato da Matlab a cui 
+ sara necessario solamente inserire uno dei  tempi di campionamento precedentemente calcolati.
+
+ Scegliamo inizialmente di discretizzare il controllore tramite Tustin e lo tariamo con tutti e 3 i tempi di campionamento precdentemente calcolati.
+
+
+ \begin{figure}[H]
+\centering
+\includegraphics[width=1\linewidth]{Tustin_a_3.png}
+\caption{Confronto tra I vari tempi di campionamento}
+\label{fig:impl_arch}
+\end{figure}
+
+
+
+
+
+ Notiamo che il tempo di campionamento adeguato è 0.0125, utilizzeremo questo valore per valutare le differenze tra Tustin e i metodi di eulero.
+
+
+
+Implementando i tre metodi tramite il blocco 'Discrete Transfer fnc' di Simulink otteniamo le 3 discretizzazioni confrontate con il sistema a tempo continuo
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\linewidth]{Tustin eulero.png}
+\caption{Eulero e Tustin a confronto}
+\label{fig:impl_arch}
+\end{figure}
+
+Notiamo come i metodi di eulero siano entrambi molto fedeli al controllore a tempo continuo e forniscano entrambi una buona rappresentazione della sua versione discreta senza una perdita eccessiva di prestazioni, avremo in fatti per Eulero in avanti ed Eulero all'indietro un tempo di assestamento pressoche identico alla loro versione in continuo, e una sovraelongazione al 'limite' delle specifiche, corrispettivamente del 20.5\% e del 19.5\%.
+
+Prima di terminare la trattazione sulla discretizzazione forniamo un'alternativa ai metodi di discretizzazione affrontati precedentemente.
+
+\'E infatti possibile discretizzare un controllore di tipo PID (e quindi anche PI, PD ecc.), ipotizzando di conoscerne il modello matematico ( in questo caso i valori di P, I, e D) direttamente attraverso il blocco simulink del controllore che abbiamo scelto modificando l'opzione 'time-domain' da 'continuos' a 'discrete' e impostando un tempo di campionamento a nostra scelta.
+Optando per Tc=0.0125 otteniamo
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\linewidth]{BLOCCOPI.png}
+\caption{Confronto tra continuo e discreto tramite Simulink}
+\label{fig:impl_arch}
+\end{figure}
+
+Notiamo che anche in questo caso la discretizzazione è andata a buon fine.
+
+
+
+
+
+
+\section{Controllore dinamico }
+
+La seconda parte del progetto richiede di progettare un controllore dinamico data una funzione di trasferimento G:
+
+\[ G(s) = \frac{1}{s(s+3.8)^3} \]
+
+in grado di garantire:
+
+1. errore massimo del 5\% rispetto ad un riferimento a rampa con pendenza unitaria.
+
+2. Sovra-elongazione percentuale massima pari al 20\% e tempo di salita minore di 2 sec.
+
+
+
+Prima di progettare il controllore assumiamo che il criterio di Nyquits sia rispettato e che non vi siano cancellazioni nel semipiano destro fra regolatore e impianto.
+Queste assunzioni sono fondamentali per garantire la stabilit\`{a}
+ interna del sistema, assumemendo quindi  che le uscite corrispondenti ai segnali di ingresso( riferimenti, disturbi e rumore) siano limitate.
+
+Un ulteriore semplificazione per garantire le specifiche sulla precisione statica consiste nel presupporre rumore e disturbo nulli.
+
+
+
+\subsection{L'errore come parametro della precisione statica}
+
+Nell'analisi dell'errore a regime, e quindi nella scelta di un controllore adeguato che lo "tenga sotto controllo",\`{e} fondamentale scegliere correttamente il riferimento corretto, in base al \emph{tipo} di funzione ad anello.
+
+Distinguiamo alcuni casi tipici:
+
+
+
+
+
+
+
+
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{c|cccc}
+   
+    \multicolumn{1}{c}{} & $Gradino$ & $Rampa$ & $Rampa Quadra$  \\
+    \cline{2-5}
+    $Tipo 0$ &  1/$k_s$ & $\infty$ & $\infty$ &  \\
+    \cline{2-5}
+    $Tipo 1$  & 0 & $1/k_v$  & $\infty$  &  \\
+    \cline{2-5}
+    $Tipo 2$ & 0 & 0 & 1/$k_a$  &  \\
+    \cline{2-5}
+    
+   
+  \end{tabular}
+  \caption{Tabella degli errori}
+  \label{tab:crossed_data}
+\end{table}
+
+
+
+
+  
+
+Nel nostro caso, le specifiche della funzione e del riferimento richiesto renderanno necessario l'utilizzo di un controllore k, senza l'aggiunta di uteriori poli.
+
+
+
+
+
+Il guadagno del controllore,per un sistema definito nel dominio di Laplace, viene calcolato dal teorema del valore finale: se $\lim_{t\to +\infty } e\left(t\right)$ esiste allora:
+$\lim_{t\to +\infty } e\left(t\right)=\lim_{s\to 0} \;s\cdot E\left(s\right)$.
+
+Poiche $E\left(s\right)=\frac{1}{1+L\left(s\right)}R\left(s\right)$ con R(s) = $\frac{1}{s^2 }$ e C(s) =K determiniamo il valore di guadagno k a apartire da: 
+
+
+
+$\lim_{s\to 0} \;s\cdot \;\frac{1}{K\cdot G\left(s\right)}\cdot \frac{1}{s^2 }<\frac{1}{20}\;=\lim_{s\to 0} \;s\frac{1}{K*\frac{1}{s{\left(s+3\ldotp 8\right)}^3 }\;}*\frac{1}{s^2 }\;\;\;\;\Longrightarrow \;\;\;\;\;\frac{1}{K*\frac{1}{54,87}}<0\ldotp 05\;\;\;\;\;\;\;\;\;\Longrightarrow \;\;\;\;\;K>1097,4$
+
+
+
+
+Ponendo K=1100 e notiamo come il sistema non sia stabile e diverga molto rapidamente a valori altissimi.Questo perche
+la scelta di un controllore adeguato non sempre permette di soddisfare le specifiche sulla precisione statica, in questo caso vediamo come il sistema non riesce a inseguire il riferimento proposto
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\linewidth]{Errore.png}
+\caption{Confronto tra riferimento e risposta}
+\label{fig:impl_arch}
+\end{figure}
+
+
+\subsection{Reti correttrici}
+
+L'utilizzo di una rete correttrice  \`{e}
+ necessario per soddifisfare alcune specifiche dinamiche desiderabili
+(bassa Sovra-elongazione, buon margine di fase, basso tempo di assestamento ecc.).
+La scelta di una rete adeguata dipende dalla caratteristiche intrinseche del sistema a ciclo chiuso quali guadagno e margine di fase. Oltre al caso triviale 
+
+
+
+
+
+
+\[
+\begin{cases}
+\begin{aligned}
+  |L(j \tilde{\omega}_c)| &< 1 \\
+  \pi - |\angle L(j \omega_c)| &> \tilde{\phi}_M
+\end{aligned}
+\end{cases}
+\]
+
+Nel quale andr\`{a} ritoccato il valore del controllore implementato per la precisione statica, è possibile introdurre una delle 3 seguenti reti correttrici.
+
+
+
+
+ \subsubsection{Rete anticipatrice}
+ 
+ Una rete anticipatrice \`{e}
+ richiesta quando \`{e}
+ necassario recuperare il guadagno e migliorare il margine di fase, ovvero nel caso in cui: 
+ 
+ \[
+\begin{cases}
+\begin{aligned}
+  |L(j \tilde{\omega}_c)| &< 1 \\
+  \pi - |\angle L(j \omega_c)| &< \tilde{\phi}_M
+\end{aligned}
+\end{cases}
+\]
+
+
+
+\subsubsection{Rete Ritardatrice}
+Una rete ritardatrice o attenuatrice \`{e}
+ richiesta invece quando è necessario abbassare il guadagno cercando di non peggiorare il margine di fase. Ovvero nel caso in cui
+
+ \[
+\begin{cases}
+\begin{aligned}
+  |L(j \tilde{\omega}_c)| &> 1 \\
+  \pi - |\angle L(j \omega_c)| &> \tilde{\phi}_M
+\end{aligned}
+\end{cases}
+\]
+
+
+\subsubsection{Rete a sella}
+
+Una rete a sella \`{e}
+ necessaria quando si deve sia attenuare il guadagno che recuperare il margine di fase, ovvero nel caso in cui:
+
+ \[
+\begin{cases}
+\begin{aligned}
+  |L(j \tilde{\omega}_c)| &> 1 \\
+  \pi - |\angle L(j \omega_c)| &< \tilde{\phi}_M
+\end{aligned}
+\end{cases}
+\]
+
+
+Le stutture delle 3 reti sono le seguenti
+
+Rete anticipatrice: \(\frac{1 + sT}{1 + s\alpha T}\)
+
+Rete ritardatrice: \(\frac{1 + sT}{1 + s\alpha T}\)  
+
+Rete a sella: \(\frac{(1 + s\alpha T1)}{(1 + sT1)} \cdot \frac{(1 + sT2)}{(1 + s\alpha T2)}\)
+
+
+Valutiamo i criteri con i quali scegliere le incognite \[
+m, \quad \alpha, \quad \tau
+\].
+
+\subsection{Taratura dei parametri per una rete ritardatrice}
+
+
+Dalla specifica sul tempo di salita (massimo) richiesto:
+\(w_b = 0.8 \frac{\pi}{T_r}\) = 1.25,
+ricaviamo un lower bound per la pulsazione di attraversamento,optiamo  quindi per un valore sulla banda passante che sia \( \geq \), ad esempio 1.5.
+
+Applichiamo la rete al sistema, che ricordiamo essere gi\`{a} 
+ stato precedentemente tarato da un controllore G1(s) allo scopo di rispettare i criteri della precisione statica. Quindi il nostro sistema L(s) sar{a} (temporaneamente) dato da:
+\begin{gather*}
+    c_{\text{lead}} = \frac{1 + sT}{1 + s\alpha T} \\
+    C_1 = k = 1100 \\
+    G(s) = \frac{1}{s(s+3.8)^3} ]
+\end{gather*}
+
+
+ 
+ 
+ Valutiamo su Matlab come si comporta il nostro sistema a ciclo chiuso sia dal punto di vista grafico, che descritto nelle sue componenti rispetto ad un riferimento ad un gradino
+
+
+\begin{figure}[h!]
+  \caption{Errore}
+  \centering
+  \includegraphics[width=0.8\textwidth]{ErroreSi.png}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\linewidth]{Rete_ritardatrice.png}
+  \caption{Sistema con rete attenuatrice}
+  \label{fig:Errore3.png}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\linewidth]{DatiOk.png}
+  \caption{Info sistema}
+  \label{fig:Grafico1.png}
+\end{figure}
+
+
+Sulla base di quanto osservato, facciamo alcune considerazioni fondamentali:
+
+
+
+
+\begin{enumerate}
+    \item Il sistema \`{e} stabile.
+    \item Le specifiche sulla precisione statica sono state rispettate (errore a regime intorno al 4.9\%)
+    \item La Sovra-elongazione è "pessima" ovvero è piu che raddoppiata rispetto alla specifiche richieste (45,6\%)
+    
+    
+\end{enumerate}
+
+\`{E} necessario quindi modificare ulteriormente il sistema senza snaturarlo, ricordando che l'obiettivo principale \`{e}
+ risolvere i problemi sulla sovra-elongazione senza peggiorare le prestazioni della rete (per quanto possibile): optiamo per una rete anticipatrice.
+
+ \subsection{Taratura dei parametri per una rete anticipatrice }
+ 
+ Anche in questo caso calcoliamo \[
+m, \quad \alpha, \quad \tau
+\] considerando una sovra-elongazione massima del 20\% e un tempo di salita massimo di 2 secondi.
+ 
+ Attraverso Matlab ricaviamo m=1/M =4.99, \(\alpha\) = 0.0149 e \(\tau\)
+ =1.46.
+ La  \(c_{\text{lead}}\) risultante, assumer\`{a} quindi il seguente valore: 
+\[
+C_{\text{lead}} = \frac{1.635s + 1}{0.02439s + 1}
+\]
+
+
+ 
+  
+ 
+Implementiamo adesso la rete ottenuta nel sistema che sarà quindi composto da tre controllori a cascata insieme al modello dell'impianto G(s).
+
+
+ \(c_{\text{lead}}\)* \(c_{\text{lag}}\)* \(c_{\text{1}}\)*G(s)= L(s) = \[
+ \frac{1.221 \times 10^4s^2 + 9302s + 1120}{2.675s^6 + 140.2s^5 + 1368s^4 + 4911s^3 + 6063s^2 + 54.87s}
+\]
+
+
+Valutiamo adesso il sistema a ciclo chiuso:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\linewidth]{GraifcoFin.png}
+  \caption{Grafico finale}
+  \label{Gra}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\linewidth]{DatiFinali.png}
+  \caption{Info del sistema finale}
+  \label{fig:Errore3.png}
+\end{figure}
+
+
+
+
+Notiamo che la sovraelongazione si è abbassata notevolmente e che tutte le specifiche sono rispettate con: 
+
+
+
+\begin{enumerate}
+  \item Errore a regime \(= 4.9\% \leq 5\%\)
+  \item Sovraelongazione \(= 15.92\% \leq 20\%\)
+  \item Tempo di salita \(= 0.43 \, \text{sec} \leq 2 \, \text{sec}\)
+\end{enumerate}
+
+\end{document}
+ 
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
